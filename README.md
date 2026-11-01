@@ -51,6 +51,9 @@ function code 3.
 | `electrical_energy_per_day`, `_per_month`, `_per_year` | gauge | 36701, 36703, 36704 | Electrical energy in kWh, undocumented |
 | `system_operating_mode`, `system_operating_mode_info{value}` | gauge | 40001 (holding) | System operating mode |
 | `pv_power_setpoint_watts` | gauge | 40002 (holding) | PV power setpoint, for example written by evcc |
+| `room_comfort_set_temperature_celsius`, `room_normal_…`, `room_setback_…` | gauge | 41105-41107 (holding) | Room set temperatures comfort, normal and setback, heating circuit 1 |
+| `heating_curve_ratio` | gauge | 41108 (holding) | Heating curve of heating circuit 1, undocumented |
+| `hot_water_normal_set_temperature_celsius`, `hot_water_setback_…` | gauge | 42103, 42104 (holding) | Hot water set temperatures normal and setback |
 | `up` | gauge | | 1 if the last scrape reached the heat pump |
 
 Notes on the register sources:
@@ -61,6 +64,30 @@ Notes on the register sources:
   electric heater 1), so it is exported as a counter with that meaning.
 - 36701-36704 (electrical energy) are not part of 83807301. They are known from the
   Home Assistant community.
+- 41108 is not part of 83807301. Its value (60) matches the heating curve 0.60 set on
+  the device.
+
+## What the heat pump offers over Modbus
+
+A read-only scan of all addresses (function codes 3 and 4) on firmware WWP-CPU T5.3 found:
+
+- Only 30001-39998 (input) and 40001-49998 (holding) answer. Every read that starts
+  elsewhere gets exception 2.
+- 141 data points carry values; every other address reads 0xFFFF. A block read that
+  includes such an address answers with the exception bit set but still sends the
+  data, so a standard Modbus client drops the whole block. The exporter reads one
+  register per request for this reason.
+- A read of 125 registers hangs the connection until the timeout; 120 work.
+- The data points are those of 83807301 plus a few undocumented ones (33107, 34102,
+  34103, 36701-36704, 36801, 41108-41112). The WEM portal shows more values than
+  Modbus offers: refrigerant, heat exchanger, hot gas and air inlet temperatures,
+  compressor frequency, operating hours and cycles, defrost cycles, switch-over
+  valve, live volume flow and electrical power are not available in any register,
+  neither as 16 nor as 32 bit.
+- All energy statistics registers (36101-36801) read 0 on this firmware, while the
+  portal shows the same statistics with values.
+- The Modbus setting "Zugriff" has the values Aus, Ein and Service. Service allows
+  access for 60 minutes only (manual 83315301); it does not add registers.
 
 The `*_info` metrics carry the decoded state name in the `value` label, for example
 `wemportal_operating_state_info{value="HEIZBETRIEB"} 1`.

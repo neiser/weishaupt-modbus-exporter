@@ -65,6 +65,13 @@ REGISTERS = [
     ('electrical_energy_per_month', 'gauge', INPUT, 36703, 1, 'Elektrische Energie Monat in kWh'),
     ('electrical_energy_per_year', 'gauge', INPUT, 36704, 1, 'Elektrische Energie Jahr in kWh'),
     ('pv_power_setpoint_watts', 'gauge', HOLDING, 40002, 1, 'SollwertPV (Leistungsvorgabe, z. B. von evcc)'),
+    ('room_comfort_set_temperature_celsius', 'gauge', HOLDING, 41105, 0.1, 'Raumsolltemperatur Komfort Heizkreis 1'),
+    ('room_normal_set_temperature_celsius', 'gauge', HOLDING, 41106, 0.1, 'Raumsolltemperatur Normal Heizkreis 1'),
+    ('room_setback_set_temperature_celsius', 'gauge', HOLDING, 41107, 0.1, 'Raumsolltemperatur Absenk Heizkreis 1'),
+    # 41108 is not in 83807301; it matches the heating curve set on the device.
+    ('heating_curve_ratio', 'gauge', HOLDING, 41108, 0.01, 'Heizkurve Heizkreis 1'),
+    ('hot_water_normal_set_temperature_celsius', 'gauge', HOLDING, 42103, 0.1, 'Warmwassersolltemperatur Normal'),
+    ('hot_water_setback_set_temperature_celsius', 'gauge', HOLDING, 42104, 0.1, 'Warmwassersolltemperatur Absenk'),
 ]
 STATE_REGISTERS = [
     ('system_state', INPUT, 30006, STATES, 'Betriebsstatusanzeige System'),
@@ -126,7 +133,7 @@ def collect(client):
         if scale == 1:
             value = unsigned(value)
         name = 'wemportal_' + metric
-        lines += [f'# HELP {name} {help_text}', f'# TYPE {name} {kind}', f'{name} {round(value * scale, 1)}']
+        lines += [f'# HELP {name} {help_text}', f'# TYPE {name} {kind}', f'{name} {round(value * scale, 2)}']
     for metric, fc, register, names, help_text in STATE_REGISTERS:
         value = client.read(fc, register)
         if value is None:
