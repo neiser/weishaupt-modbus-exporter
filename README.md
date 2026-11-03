@@ -45,10 +45,10 @@ function code 3.
 | `heating2_state` | gauge | 34105 | State of electric heater 2 |
 | `sg_ready1_state`, `sg_ready2_state` | gauge | 35101, 35102 | SG Ready inputs |
 | `total_energy_per_day`, `_yesterday`, `_per_month`, `_per_year` | gauge | 36101-36104 | Thermal energy, total, in kWh |
-| `heating_energy_per_day`, `_per_month`, `_per_year` | gauge | 36201, 36203, 36204 | Thermal energy for heating in kWh |
-| `water_energy_per_day`, `_per_month`, `_per_year` | gauge | 36301, 36303, 36304 | Thermal energy for hot water in kWh |
+| `heating_energy_per_day`, `_yesterday`, `_per_month`, `_per_year` | gauge | 36201-36204 | Thermal energy for heating in kWh |
+| `water_energy_per_day`, `_yesterday`, `_per_month`, `_per_year` | gauge | 36301-36304 | Thermal energy for hot water in kWh |
 | `cooling_energy_per_day`, `_per_month`, `_per_year` | gauge | 36401, 36403, 36404 | Thermal energy for cooling in kWh |
-| `electrical_energy_per_day`, `_per_month`, `_per_year` | gauge | 36701, 36703, 36704 | Electrical energy in kWh, undocumented |
+| `electrical_energy_per_day`, `_yesterday`, `_per_month`, `_per_year` | gauge | 36701-36704 | Electrical energy in kWh, undocumented |
 | `system_operating_mode`, `system_operating_mode_info{value}` | gauge | 40001 (holding) | System operating mode |
 | `pv_power_setpoint_watts` | gauge | 40002 (holding) | PV power setpoint, for example written by evcc |
 | `room_comfort_set_temperature_celsius`, `room_normal_…`, `room_setback_…` | gauge | 41105-41107 (holding) | Room set temperatures comfort, normal and setback, heating circuit 1 |
@@ -84,8 +84,11 @@ A read-only scan of all addresses (function codes 3 and 4) on firmware WWP-CPU T
   compressor frequency, operating hours and cycles, defrost cycles, switch-over
   valve, live volume flow and electrical power are not available in any register,
   neither as 16 nor as 32 bit.
-- All energy statistics registers (36101-36801) read 0 on this firmware, while the
-  portal shows the same statistics with values.
+- The energy statistics count whole kWh. The day registers (36101, 36201, 36301,
+  36701) count up during the day and reset to 0 at local midnight; the "yesterday"
+  registers (36102, 36202, 36302, 36702) hold the previous day's value. The month and
+  year registers, all cooling registers (364xx) and 36801 read 0, while the portal
+  shows month and year values.
 - The Modbus setting "Zugriff" has the values Aus, Ein and Service. Service allows
   access for 60 minutes only (manual 83315301); it does not add registers.
 
