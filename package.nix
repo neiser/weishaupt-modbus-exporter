@@ -2,7 +2,7 @@
 
 stdenvNoCC.mkDerivation {
   pname = "weishaupt-modbus-exporter";
-  version = "1.0.0";
+  version = "1.1.0";
 
   src = ./weishaupt_modbus_exporter.py;
   dontUnpack = true;

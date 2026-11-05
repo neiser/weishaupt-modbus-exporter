@@ -95,6 +95,24 @@ A read-only scan of all addresses (function codes 3 and 4) on firmware WWP-CPU T
 The `*_info` metrics carry the decoded state name in the `value` label, for example
 `wemportal_operating_state_info{value="HEIZBETRIEB"} 1`.
 
+## Estimated electrical power
+
+No register reports the electrical power, so `wemportal_heatpump_estimated_power_watts`
+estimates it from the load request (33103), outside temperature (30001), flow temperature
+(33104) and operating state (33101):
+
+- Load request 0 %: 12 W standby.
+- Otherwise, with r = load request in % and lift = flow − outside temperature in K:
+  `408.4 + 9.0·r + 0.4·r·lift − 5.51·lift`, plus `828.04 − 12.67·r` during hot water
+  or legionella protection, and at least 150 W.
+
+The coefficients are a linear fit of 1-minute values from 2022-05 to 2024-01, when an
+electricity meter measured the heat pump of a WWP LS 8-B R-E. On data from 2023-10 to 2024-01,
+which the fit did not see, the mean absolute error is 107 W for 1-minute values, 92 W for
+15-minute averages and 1.3 kWh per day at 9.7 kWh per day on average. A model that also used
+the compressor frequency from the WEM portal was not more accurate. The electric heaters
+and defrosting are not part of the estimate. The coefficients apply to this installation only.
+
 ## NixOS
 
 Add the flake as an input and import the module:

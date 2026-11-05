@@ -127,25 +127,49 @@ def unsigned(value):
     return value & 0xFFFF
 
 
+# Linear fit of 1-minute heat pump power, measured with a meter from 2022-05 to 2024-01.
+STANDBY_WATTS = 12
+HOT_WATER_STATES = {'WARMWASSERBETRIEB', 'LEGIONELLENSCHUTZ'}
+
+
+def estimated_power(request_ratio, outside, flow, state):
+    if request_ratio <= 0:
+        return STANDBY_WATTS
+    lift = flow - outside
+    hot_water = state in HOT_WATER_STATES
+    power = (408.4 + 9.0 * request_ratio + 0.4 * request_ratio * lift - 5.51 * lift
+             + hot_water * (828.04 - 12.67 * request_ratio))
+    return max(150, round(power))
+
+
 def collect(client):
     lines = []
+    values = {}
     for metric, kind, fc, register, scale, help_text in REGISTERS:
         value = client.read(fc, register)
         if value is None or value in NO_VALUE:
             continue
         if scale == 1:
             value = unsigned(value)
+        values[metric] = round(value * scale, 2)
         name = 'wemportal_' + metric
-        lines += [f'# HELP {name} {help_text}', f'# TYPE {name} {kind}', f'{name} {round(value * scale, 2)}']
+        lines += [f'# HELP {name} {help_text}', f'# TYPE {name} {kind}', f'{name} {values[metric]}']
     for metric, fc, register, names, help_text in STATE_REGISTERS:
         value = client.read(fc, register)
         if value is None:
             continue
         label = names[value] if isinstance(names, list) and value < len(names) else (
             names.get(value, str(value)) if isinstance(names, dict) else str(value))
+        values[metric] = label
         name = 'wemportal_' + metric
         lines += [f'# HELP {name} {help_text}', f'# TYPE {name} gauge', f'{name} {value}',
                   f'# HELP {name}_info {help_text}', f'# TYPE {name}_info gauge', f'{name}_info{{value="{label}"}} 1']
+    inputs = ('performance_request_ratio', 'current_outside_temperature_celsius',
+              'water_inlet_temperature_celsius', 'operating_state')
+    if all(k in values for k in inputs):
+        name = 'wemportal_heatpump_estimated_power_watts'
+        lines += [f'# HELP {name} Geschätzte elektrische Leistung der Wärmepumpe, kein Messwert',
+                  f'# TYPE {name} gauge', f'{name} {estimated_power(*(values[k] for k in inputs))}']
     return lines
 
 
